@@ -73,11 +73,18 @@ app.use(
 mountRoutes(app);
 
 app.get("/", (req, res) => {
-  res.status(200).json({
+  res.redirect("/api/v1");
+});
+app.get("/api/v1", (req, res) => {
+   res.json({
     status: "success",
-    message: "API is running!"
+    message: "Welcome to E-commerce API. All routes start with /api/v1",
+    apiRoot: "/api/v1"
   });
 });
+
+
+
 
 
 app.all('*', (req, res, next) => {
