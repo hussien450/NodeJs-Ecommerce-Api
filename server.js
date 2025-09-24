@@ -72,6 +72,14 @@ app.use(
 // Mount Routes
 mountRoutes(app);
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "API is running!"
+  });
+});
+
+
 app.all('*', (req, res, next) => {
   next(new ApiError(`Can't find this route: ${req.originalUrl}`, 400));
 });
