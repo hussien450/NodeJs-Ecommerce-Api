@@ -23,11 +23,23 @@ const {
   deleteLoggedUserData,
   filterUsersForNonAdmin,
   allowOnlySelfOrAdmin,
+  disallowAdminRoleOnCreate,
+  maybeUploadUserImage,
 } = require("../services/userService");
 
 const authService = require("../services/authService");
 
 const router = express.Router();
+
+// Public create user (cannot create admin role)
+router.post(
+  "/",
+  maybeUploadUserImage,
+  resizeImage,
+  disallowAdminRoleOnCreate,
+  createUserValidator,
+  createUser
+);
 
 router.use(authService.protect);
 
@@ -61,9 +73,9 @@ router.put(
   changeUserPasswordValidator,
   changeUserPassword
 );
-router
-  .route("/")
-  .post(uploadUserImage, resizeImage, createUserValidator, createUser);
+router.route("/");
+// POST is handled above as public create
+
 router
   .route("/:id")
   .get(getUserValidator, getUser)

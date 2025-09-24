@@ -10,8 +10,17 @@ const { uploadSingleImage } = require("../middlewares/uploadImageMiddleware");
 const createToken = require("../utils/createToken");
 const User = require("../models/userModel");
 
-// Upload single image
+// Upload single image (always-on version)
 exports.uploadUserImage = uploadSingleImage("profileImg");
+
+// Conditionally run upload middleware only for multipart/form-data
+exports.maybeUploadUserImage = (req, res, next) => {
+  const isMultipart = req.is && req.is("multipart/form-data");
+  if (isMultipart) {
+    return uploadSingleImage("profileImg")(req, res, next);
+  }
+  return next();
+};
 
 // Image processing
 exports.resizeImage = asyncHandler(async (req, res, next) => {
@@ -45,6 +54,20 @@ exports.filterUsersForNonAdmin = asyncHandler(async (req, res, next) => {
     !["admin", "manager"].includes(req.user.role)
   ) {
     req.filterObj = { _id: req.user._id };
+  }
+  next();
+});
+
+// @desc    Prevent creating an admin user via public route
+exports.disallowAdminRoleOnCreate = asyncHandler(async (req, res, next) => {
+  if (req.body && typeof req.body.role === "string") {
+    if (req.body.role.toLowerCase() === "admin") {
+      return next(new ApiError("Creating admin role is not allowed", 403));
+    }
+  }
+  // default role to user if not provided
+  if (!req.body || !req.body.role) {
+    req.body = { ...req.body, role: "user" };
   }
   next();
 });
