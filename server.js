@@ -72,7 +72,10 @@ app.use(
 // Mount Routes
 mountRoutes(app);
 
-
+// Add this route BEFORE your /api/v1 routes
+app.get('/', (req, res) => {
+  res.redirect('/api/v1');
+});
 app.get("/api/v1", (req, res) => {
    res.json({
     status: "success",
