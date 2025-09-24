@@ -4,12 +4,6 @@
   "routes": [
     { "src": "/", "dest": "/api/v1/ " },
     { "src": "/(.*)", "dest": "/server.js" }
-  ],
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/api/v1",
-      "permanent": true
-    }
   ]
+ 
 }
