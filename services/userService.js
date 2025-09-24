@@ -1,19 +1,17 @@
-const asyncHandler = require('express-async-handler');
-const { v4: uuidv4 } = require('uuid');
-const sharp = require('sharp');
-const bcrypt = require('bcryptjs');
+const asyncHandler = require("express-async-handler");
+const { v4: uuidv4 } = require("uuid");
+const sharp = require("sharp");
+const bcrypt = require("bcryptjs");
 const path = require("path");
 
-
-const factory = require('./handlersFactory');
-const ApiError = require('../utils/apiError');
-const { uploadSingleImage } = require('../middlewares/uploadImageMiddleware');
-const createToken = require('../utils/createToken');
-const User = require('../models/userModel');
-
+const factory = require("./handlersFactory");
+const ApiError = require("../utils/apiError");
+const { uploadSingleImage } = require("../middlewares/uploadImageMiddleware");
+const createToken = require("../utils/createToken");
+const User = require("../models/userModel");
 
 // Upload single image
-exports.uploadUserImage = uploadSingleImage('profileImg');
+exports.uploadUserImage = uploadSingleImage("profileImg");
 
 // Image processing
 exports.resizeImage = asyncHandler(async (req, res, next) => {
@@ -36,6 +34,32 @@ exports.resizeImage = asyncHandler(async (req, res, next) => {
   req.body.profileImg = filename;
 
   next(); // مهم جداً
+});
+
+// @desc    Filter users list for non-admin roles (seller/user see only themselves)
+// @access  Private
+exports.filterUsersForNonAdmin = asyncHandler(async (req, res, next) => {
+  if (
+    req.user &&
+    req.user.role &&
+    !["admin", "manager"].includes(req.user.role)
+  ) {
+    req.filterObj = { _id: req.user._id };
+  }
+  next();
+});
+
+// @desc    Allow only admins/managers or the owner of the resource
+exports.allowOnlySelfOrAdmin = asyncHandler(async (req, res, next) => {
+  const isAdmin = req.user && ["admin", "manager"].includes(req.user.role);
+  const isOwner =
+    req.user && req.params && String(req.params.id) === String(req.user._id);
+  if (!isAdmin && !isOwner) {
+    return next(
+      new ApiError("You are not allowed to access this resource", 403)
+    );
+  }
+  next();
 });
 
 // @desc    Get list of users
@@ -154,5 +178,5 @@ exports.updateLoggedUserData = asyncHandler(async (req, res, next) => {
 exports.deleteLoggedUserData = asyncHandler(async (req, res, next) => {
   await User.findByIdAndUpdate(req.user._id, { active: false });
 
-  res.status(204).json({ status: 'Success' });
+  res.status(204).json({ status: "Success" });
 });

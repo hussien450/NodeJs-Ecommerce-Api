@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const {
   getUserValidator,
   createUserValidator,
@@ -6,7 +6,7 @@ const {
   deleteUserValidator,
   changeUserPasswordValidator,
   updateLoggedUserValidator,
-} = require('../utils/validators/userValidator');
+} = require("../utils/validators/userValidator");
 
 const {
   getUsers,
@@ -21,34 +21,53 @@ const {
   updateLoggedUserPassword,
   updateLoggedUserData,
   deleteLoggedUserData,
-} = require('../services/userService');
+  filterUsersForNonAdmin,
+  allowOnlySelfOrAdmin,
+} = require("../services/userService");
 
-const authService = require('../services/authService');
+const authService = require("../services/authService");
 
 const router = express.Router();
 
 router.use(authService.protect);
 
-router.get('/getMe', getLoggedUserData, getUser);
-router.put('/changeMyPassword', updateLoggedUserPassword);
-router.put('/updateMe', updateLoggedUserValidator, updateLoggedUserData);
-router.delete('/deleteMe', deleteLoggedUserData);
+router.get("/getMe", getLoggedUserData, getUser);
+router.put("/changeMyPassword", updateLoggedUserPassword);
+router.put("/updateMe", updateLoggedUserValidator, updateLoggedUserData);
+router.delete("/deleteMe", deleteLoggedUserData);
+
+// List users: admins/managers see all, sellers/users see themselves only
+router
+  .route("/")
+  .get(
+    authService.allowedTo("admin", "seller", "user"),
+    filterUsersForNonAdmin,
+    getUsers
+  );
+
+// Allow users/sellers to delete themselves; admins can delete anyone
+router.delete(
+  "/:id",
+  authService.allowedTo("admin", "seller", "user"),
+  allowOnlySelfOrAdmin,
+  deleteUserValidator,
+  deleteUser
+);
 
 // Admin
-router.use(authService.allowedTo('admin', 'manager'));
+router.use(authService.allowedTo("admin", "seller"));
 router.put(
-  '/changePassword/:id',
+  "/changePassword/:id",
   changeUserPasswordValidator,
   changeUserPassword
 );
 router
-  .route('/')
-  .get(getUsers)
+  .route("/")
   .post(uploadUserImage, resizeImage, createUserValidator, createUser);
 router
-  .route('/:id')
+  .route("/:id")
   .get(getUserValidator, getUser)
-  .put(uploadUserImage, resizeImage, updateUserValidator, updateUser)
-  .delete(deleteUserValidator, deleteUser);
+  .put(uploadUserImage, resizeImage, updateUserValidator, updateUser);
+// delete handled above with allowOnlySelfOrAdmin
 
 module.exports = router;
